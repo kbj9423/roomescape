@@ -229,13 +229,19 @@
 
   /* ---------- 캐릭터 프레임 교차 재생 (2장씩 번갈아) ----------
      기본 대화형: idle1 ↔ idle3
-     웃음(정답): idle1 ↔ smile / 우는 것: idle2 ↔ cry
-     당황: idle3 ↔ embarrassed / 화남(오답): idle4 ↔ angry
+     웃음: idle1 ↔ smile / 눈물: idle2 ↔ cry
+     당황: idle3 ↔ embarrassed / 화남: idle4 ↔ angry
+     정답/오답 반응은 다음 문제·대사로 넘어가기 전까지 계속 반복됨
   ---------------------------------------------------------- */
   var DEFAULT_PAIR = ['idle1.png', 'idle3.png'];
+  var EMOTION_PAIRS = {
+    '웃음': ['idle1.png', 'smile.png'],
+    '눈물': ['idle2.png', 'cry.png'],
+    '당황': ['idle3.png', 'embarrassed.png'],
+    '화남': ['idle4.png', 'angry.png']
+  };
   var pairTimer = null;
   var pairIndex = 0;
-  var revertTimer = null;
 
   function playPair(frames) {
     clearInterval(pairTimer);
@@ -245,14 +251,6 @@
       pairIndex = (pairIndex + 1) % frames.length;
       charSprite.style.backgroundImage = "url('" + frames[pairIndex] + "')";
     }, 350);
-  }
-
-  function reactAndReturn(frames, ms) {
-    clearTimeout(revertTimer);
-    playPair(frames);
-    revertTimer = setTimeout(function () {
-      playPair(DEFAULT_PAIR);
-    }, ms || 1400);
   }
 
   playPair(DEFAULT_PAIR);
@@ -344,6 +342,8 @@
        [숫자문제]
        문제: 4 x 9는 얼마일까?
        정답: 36
+       정답반응: 웃음      (선택, 기본값 웃음 — 웃음/눈물/당황/화남 중 하나)
+       오답반응: 화남      (선택, 기본값 화남 — 웃음/눈물/당황/화남 중 하나)
 
        [객관식문제]
        문제: 반반이가 좋아하는 색깔은?
@@ -370,14 +370,16 @@
         fields[key] = val;
         fieldOrder.push(key);
       }
+      var correctPair = EMOTION_PAIRS[fields['정답반응']] || EMOTION_PAIRS['웃음'];
+      var wrongPair = EMOTION_PAIRS[fields['오답반응']] || EMOTION_PAIRS['화남'];
       if (type === '대사' && fieldOrder.length > 0) {
         var speaker = fieldOrder[0];
         steps.push({ type: 'dialogue', speaker: speaker, text: fields[speaker] });
       } else if (type === '숫자문제' && fields['문제'] && fields['정답'] !== undefined) {
-        steps.push({ type: 'number', text: fields['문제'], answer: parseInt(fields['정답'], 10) });
+        steps.push({ type: 'number', text: fields['문제'], answer: parseInt(fields['정답'], 10), correctPair: correctPair, wrongPair: wrongPair });
       } else if (type === '객관식문제' && fields['문제'] && fields['보기'] && fields['정답']) {
         var options = fields['보기'].split(',').map(function (s) { return s.trim(); }).filter(function (s) { return s; });
-        steps.push({ type: 'choice', text: fields['문제'], options: options, answer: fields['정답'].trim() });
+        steps.push({ type: 'choice', text: fields['문제'], options: options, answer: fields['정답'].trim(), correctPair: correctPair, wrongPair: wrongPair });
       } else {
         console.warn('quiz.txt: 인식할 수 없는 블록을 건너뜀 ->', block);
       }
@@ -423,6 +425,7 @@
     currentStepIndex = i;
     var step = quizSteps[i];
     var text = withName(step.text);
+    playPair(DEFAULT_PAIR);
     if (step.type === 'dialogue') {
       var isLast = (i === quizSteps.length - 1);
       typeText(text, isLast ? null : function () { playStep(i + 1); });
@@ -442,18 +445,20 @@
   }
 
   function onCorrect(i) {
-    reactAndReturn(['idle1.png', 'smile.png'], 1400);
+    var step = quizSteps[i];
+    playPair(step.correctPair);
     typeText('정답이다!', function () { advanceOrEnd(i); });
   }
 
   function onWrong(i, step) {
-    reactAndReturn(['idle4.png', 'angry.png'], 1400);
+    playPair(step.wrongPair);
     typeText('오답이다. 다시 도전해봐!', function () {
       if (step.type === 'number') showNumpadFor(step); else showChoicesFor(step);
     });
   }
 
   function showNumpadFor(step) {
+    playPair(DEFAULT_PAIR);
     numBuffer = '';
     numDisplay.textContent = '';
     numpadArea.classList.remove('hidden');
@@ -481,6 +486,7 @@
   });
 
   function showChoicesFor(step) {
+    playPair(DEFAULT_PAIR);
     choiceButtons.innerHTML = '';
     step.options.forEach(function (opt) {
       var btn = document.createElement('button');
