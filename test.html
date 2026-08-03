@@ -129,6 +129,14 @@
   #numConfirm { background: #ff5a5f; color: #0a0a0f; font-weight: bold; }
   #numClear { font-size: 14px; }
 
+  #choiceButtons { display: flex; flex-direction: column; gap: 6px; }
+  .choiceBtn {
+    background: #1c1c26; color: #eaeaea; border: 1px solid #333;
+    border-radius: 6px; font-size: 15px; padding: 11px 14px;
+    text-align: left; font-family: inherit; cursor: pointer;
+  }
+  .choiceBtn:active { background: #ff5a5f; color: #0a0a0f; }
+
   /* ---------- 가로모드 안내 ---------- */
   #rotateNotice {
     position: fixed; inset: 0; z-index: 100;
@@ -186,6 +194,10 @@
         <button id="numConfirm">확인</button>
       </div>
     </div>
+
+    <div id="choiceArea" class="hidden">
+      <div id="choiceButtons"></div>
+    </div>
   </div>
 
 </div>
@@ -205,11 +217,15 @@
   var numpad = document.getElementById('numpad');
   var numClear = document.getElementById('numClear');
   var numConfirm = document.getElementById('numConfirm');
+  var choiceArea = document.getElementById('choiceArea');
+  var choiceButtons = document.getElementById('choiceButtons');
   var startScreen = document.getElementById('startScreen');
   var startBtn = document.getElementById('startBtn');
 
   var playerName = '';
   var numBuffer = '';
+  var quizSteps = [];
+  var currentStepIndex = -1;
 
   /* ---------- 캐릭터 프레임 교차 재생 (2장씩 번갈아) ----------
      기본 대화형: idle1 ↔ idle3
@@ -320,6 +336,59 @@
     }
   });
 
+  /* ---------- quiz.txt 읽어오기 & 파싱 ----------
+     블록 형식 (빈 줄로 구분):
+       [대사]
+       반반이: 하고 싶은 말
+
+       [숫자문제]
+       문제: 4 x 9는 얼마일까?
+       정답: 36
+
+       [객관식문제]
+       문제: 반반이가 좋아하는 색깔은?
+       보기: 빨강, 파랑, 노랑
+       정답: 빨강
+     대사·문제 텍스트 안에 %이름% 을 넣으면 플레이어 이름으로 치환됨
+  --------------------------------------------------- */
+  function parseQuizText(raw) {
+    var blocks = raw.replace(/\r\n/g, '\n').split(/\n\s*\n/);
+    var steps = [];
+    blocks.forEach(function (block) {
+      var lines = block.split('\n').map(function (l) { return l.trim(); }).filter(function (l) { return l.length > 0; });
+      if (lines.length === 0) return;
+      var header = lines[0].match(/^\[(.+)\]$/);
+      if (!header) return;
+      var type = header[1].trim();
+      var fields = {};
+      var fieldOrder = [];
+      for (var i = 1; i < lines.length; i++) {
+        var idx = lines[i].indexOf(':');
+        if (idx === -1) continue;
+        var key = lines[i].slice(0, idx).trim();
+        var val = lines[i].slice(idx + 1).trim();
+        fields[key] = val;
+        fieldOrder.push(key);
+      }
+      if (type === '대사' && fieldOrder.length > 0) {
+        var speaker = fieldOrder[0];
+        steps.push({ type: 'dialogue', speaker: speaker, text: fields[speaker] });
+      } else if (type === '숫자문제' && fields['문제'] && fields['정답'] !== undefined) {
+        steps.push({ type: 'number', text: fields['문제'], answer: parseInt(fields['정답'], 10) });
+      } else if (type === '객관식문제' && fields['문제'] && fields['보기'] && fields['정답']) {
+        var options = fields['보기'].split(',').map(function (s) { return s.trim(); }).filter(function (s) { return s; });
+        steps.push({ type: 'choice', text: fields['문제'], options: options, answer: fields['정답'].trim() });
+      } else {
+        console.warn('quiz.txt: 인식할 수 없는 블록을 건너뜀 ->', block);
+      }
+    });
+    return steps;
+  }
+
+  function withName(text) {
+    return text.split('%이름%').join(playerName);
+  }
+
   /* ---------- 진행 흐름 ---------- */
   function step1_greeting() {
     typeText(
@@ -339,21 +408,52 @@
     if (!v) return;
     playerName = v;
     nameInputRow.classList.add('hidden');
-    step2_confirmAndQuiz();
+    if (quizSteps.length === 0) {
+      typeText('불러올 문제가 없다. quiz.txt를 확인해봐라.', null);
+      return;
+    }
+    playStep(0);
   }
   nameConfirm.addEventListener('click', submitName);
   nameInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') submitName();
   });
 
-  function step2_confirmAndQuiz() {
-    typeText(
-      "좋다. '" + playerName + "' 이제부터 퀴즈를 시작하지.\n너의 실력부터 보자. 4 × 9는? 정답을 입력해라.",
-      showNumpad
-    );
+  function playStep(i) {
+    currentStepIndex = i;
+    var step = quizSteps[i];
+    var text = withName(step.text);
+    if (step.type === 'dialogue') {
+      var isLast = (i === quizSteps.length - 1);
+      typeText(text, isLast ? null : function () { playStep(i + 1); });
+    } else if (step.type === 'number') {
+      typeText(text, function () { showNumpadFor(step); });
+    } else if (step.type === 'choice') {
+      typeText(text, function () { showChoicesFor(step); });
+    }
   }
 
-  function showNumpad() {
+  function advanceOrEnd(i) {
+    if (i + 1 < quizSteps.length) {
+      playStep(i + 1);
+    } else {
+      typeText('오늘 준비한 문제는 모두 끝났다! 수고했어, ' + playerName + '.', null);
+    }
+  }
+
+  function onCorrect(i) {
+    reactAndReturn(['idle1.png', 'smile.png'], 1400);
+    typeText('정답이다!', function () { advanceOrEnd(i); });
+  }
+
+  function onWrong(i, step) {
+    reactAndReturn(['idle4.png', 'angry.png'], 1400);
+    typeText('오답이다. 다시 도전해봐!', function () {
+      if (step.type === 'number') showNumpadFor(step); else showChoicesFor(step);
+    });
+  }
+
+  function showNumpadFor(step) {
     numBuffer = '';
     numDisplay.textContent = '';
     numpadArea.classList.remove('hidden');
@@ -375,24 +475,43 @@
   numConfirm.addEventListener('click', function () {
     if (!numBuffer) return;
     numpadArea.classList.add('hidden');
-    checkAnswer(parseInt(numBuffer, 10));
+    var step = quizSteps[currentStepIndex];
+    var value = parseInt(numBuffer, 10);
+    if (value === step.answer) onCorrect(currentStepIndex); else onWrong(currentStepIndex, step);
   });
 
-  function checkAnswer(value) {
-    if (value === 36) {
-      reactAndReturn(['idle1.png', 'smile.png'], 1400);
-      typeText('정답! 잘하는구나, ' + playerName + '.\n오늘 테스트는 여기까지다.', null);
-    } else {
-      reactAndReturn(['idle4.png', 'angry.png'], 1400);
-      typeText('오답이다. 다시 도전해봐!', showNumpad);
-    }
+  function showChoicesFor(step) {
+    choiceButtons.innerHTML = '';
+    step.options.forEach(function (opt) {
+      var btn = document.createElement('button');
+      btn.className = 'choiceBtn';
+      btn.textContent = opt;
+      btn.addEventListener('click', function () {
+        choiceArea.classList.add('hidden');
+        if (opt === step.answer) onCorrect(currentStepIndex); else onWrong(currentStepIndex, step);
+      });
+      choiceButtons.appendChild(btn);
+    });
+    choiceArea.classList.remove('hidden');
   }
 
   /* ---------- 시작 버튼 ---------- */
   startBtn.addEventListener('click', function () {
     unlockAudio();
     startScreen.style.display = 'none';
-    step1_greeting();
+    fetch('quiz.txt')
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.text();
+      })
+      .then(function (raw) {
+        quizSteps = parseQuizText(raw);
+        step1_greeting();
+      })
+      .catch(function (err) {
+        console.error(err);
+        dialogueText.textContent = 'quiz.txt 파일을 불러오지 못했다. 같은 폴더에 파일이 있는지 확인해봐라.';
+      });
   });
 
 })();
