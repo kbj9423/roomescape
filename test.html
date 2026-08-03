@@ -15,8 +15,8 @@
   #app {
     max-width: 480px;
     margin: 0 auto;
-    height: 100dvh;
     height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -101,6 +101,14 @@
   #inputArea {
     margin: 0 10px 8px;
     min-height: 64px;
+  }
+  /* 캐릭터가 사라져 비는 공간을, 입력 영역이 커지면서 그대로 채우도록 함 */
+  #app.inputActive #inputArea {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
   .hidden { display: none !important; }
 
