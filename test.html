@@ -49,8 +49,8 @@
     padding: 10px;
   }
   .sprite {
-    width: min(56vw, 270px);
-    max-height: 100%;
+    height: min(32vh, 260px);
+    width: auto;
     aspect-ratio: 384 / 702;
     background-image: url('smile.png');
     background-size: contain;
@@ -58,6 +58,11 @@
     background-position: center;
     image-rendering: -webkit-optimize-contrast;
     filter: drop-shadow(0 0 24px rgba(255,90,95,0.15));
+    transition: height 0.2s ease;
+  }
+  /* 입력창(이름/숫자패드)이 떠 있을 때는 캐릭터를 더 작게 줄여서 확인 버튼이 화면 밖으로 밀리지 않게 함 */
+  #app.inputActive .sprite {
+    height: min(18vh, 150px);
   }
 
   /* ---------- 대사창 ---------- */
@@ -191,6 +196,7 @@
 (function () {
   'use strict';
 
+  var appEl = document.getElementById('app');
   var charSprite = document.getElementById('charSprite');
   var dialogueBox = document.getElementById('dialogueBox');
   var dialogueText = document.getElementById('dialogueText');
@@ -208,8 +214,12 @@
   var playerName = '';
   var numBuffer = '';
 
-  /* ---------- 캐릭터 프레임 교차 재생 (2장씩 번갈아) ---------- */
-  var DEFAULT_PAIR = ['smile.png', 'embarrassed.png'];
+  /* ---------- 캐릭터 프레임 교차 재생 (2장씩 번갈아) ----------
+     기본 대화형: idle1 ↔ idle3
+     웃음(정답): idle1 ↔ smile / 우는 것: idle2 ↔ cry
+     당황: idle3 ↔ embarrassed / 화남(오답): idle4 ↔ angry
+  ---------------------------------------------------------- */
+  var DEFAULT_PAIR = ['idle1.png', 'idle3.png'];
   var pairTimer = null;
   var pairIndex = 0;
   var revertTimer = null;
@@ -235,7 +245,7 @@
   playPair(DEFAULT_PAIR);
 
   /* 프레임 전환 시 깜빡임 없도록 미리 불러오기 */
-  ['base.png', 'smile.png', 'cry.png', 'embarrassed.png', 'angry.png'].forEach(function (f) {
+  ['idle1.png', 'idle2.png', 'idle3.png', 'idle4.png', 'smile.png', 'cry.png', 'embarrassed.png', 'angry.png'].forEach(function (f) {
     var img = new Image();
     img.src = f;
   });
@@ -323,6 +333,7 @@
 
   function showNameInput() {
     nameInputRow.classList.remove('hidden');
+    appEl.classList.add('inputActive');
     nameInput.value = '';
     nameInput.focus();
   }
@@ -332,6 +343,7 @@
     if (!v) return;
     playerName = v;
     nameInputRow.classList.add('hidden');
+    appEl.classList.remove('inputActive');
     step2_confirmAndQuiz();
   }
   nameConfirm.addEventListener('click', submitName);
@@ -350,6 +362,7 @@
     numBuffer = '';
     numDisplay.textContent = '';
     numpadArea.classList.remove('hidden');
+    appEl.classList.add('inputActive');
   }
 
   numpad.addEventListener('click', function (e) {
@@ -368,15 +381,16 @@
   numConfirm.addEventListener('click', function () {
     if (!numBuffer) return;
     numpadArea.classList.add('hidden');
+    appEl.classList.remove('inputActive');
     checkAnswer(parseInt(numBuffer, 10));
   });
 
   function checkAnswer(value) {
     if (value === 36) {
-      reactAndReturn(['base.png', 'smile.png'], 1400);
+      reactAndReturn(['idle1.png', 'smile.png'], 1400);
       typeText('정답! 잘하는구나, ' + playerName + '.\n오늘 테스트는 여기까지다.', null);
     } else {
-      reactAndReturn(['base.png', 'angry.png'], 1400);
+      reactAndReturn(['idle4.png', 'angry.png'], 1400);
       typeText('오답이다. 다시 도전해봐!', showNumpad);
     }
   }
