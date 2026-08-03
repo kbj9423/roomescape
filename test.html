@@ -348,7 +348,7 @@
   /* ---------- quiz.txt 읽어오기 & 파싱 ----------
      블록 형식 (빈 줄로 구분):
        [대사]
-       반반이: 하고 싶은 말
+       하고 싶은 말      (말하는 사람은 항상 반반이로 고정)
 
        [숫자문제]
        문제: 4 x 9는 얼마일까?
@@ -376,22 +376,23 @@
       var header = lines[0].match(/^\[(.+)\]$/);
       if (!header) return;
       var type = header[1].trim();
-      var fields = {};
-      var fieldOrder = [];
-      for (var i = 1; i < lines.length; i++) {
-        var idx = lines[i].indexOf(':');
-        if (idx === -1) continue;
-        var key = lines[i].slice(0, idx).trim();
-        var val = lines[i].slice(idx + 1).trim();
-        fields[key] = val;
-        fieldOrder.push(key);
+      var bodyLines = lines.slice(1);
+      if (type === '대사') {
+        if (bodyLines.length === 0) return;
+        steps.push({ type: 'dialogue', text: bodyLines.join('\n') });
+        return;
       }
+      var fields = {};
+      bodyLines.forEach(function (line) {
+        var idx = line.indexOf(':');
+        if (idx === -1) return;
+        var key = line.slice(0, idx).trim();
+        var val = line.slice(idx + 1).trim();
+        fields[key] = val;
+      });
       var correctPair = EMOTION_PAIRS[fields['정답반응']] || EMOTION_PAIRS['웃음'];
       var wrongPair = EMOTION_PAIRS[fields['오답반응']] || EMOTION_PAIRS['화남'];
-      if (type === '대사' && fieldOrder.length > 0) {
-        var speaker = fieldOrder[0];
-        steps.push({ type: 'dialogue', speaker: speaker, text: fields[speaker] });
-      } else if (type === '숫자문제' && fields['문제'] && fields['정답'] !== undefined) {
+      if (type === '숫자문제' && fields['문제'] && fields['정답'] !== undefined) {
         steps.push({ type: 'number', text: fields['문제'], answer: parseInt(fields['정답'], 10), correctPair: correctPair, wrongPair: wrongPair });
       } else if (type === '객관식문제' && fields['문제'] && fields['보기'] && fields['정답']) {
         var options = fields['보기'].split(',').map(function (s) { return s.trim(); }).filter(function (s) { return s; });
