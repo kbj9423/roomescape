@@ -417,7 +417,7 @@
   /* ---------- 진행 흐름 ---------- */
   function step1_greeting() {
     typeText(
-      '안녕? 나는 반반이라고 한다. 너에게 퀴즈를 내겠다.\n게임을 시작하기 전에 너의 이름을 입력해라.',
+      '너.. 누구지? 이름이 뭐냐?',
       showNameInput
     );
   }
@@ -464,8 +464,6 @@
   function advanceOrEnd(i) {
     if (i + 1 < quizSteps.length) {
       playStep(i + 1);
-    } else {
-      typeText('오늘 준비한 문제는 모두 끝났다! 수고했어, ' + playerName + '.', null);
     }
   }
 
