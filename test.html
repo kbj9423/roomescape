@@ -46,40 +46,28 @@
     display: flex; align-items: center; justify-content: center;
     position: relative; min-height: 0;
     overflow: hidden;
-    padding: 16px;
+    padding: 10px;
   }
   .sprite {
-    width: min(62vw, 300px);
+    width: min(56vw, 270px);
     max-height: 100%;
     aspect-ratio: 384 / 702;
-    background-image: url('idle_1.png');
+    background-image: url('smile.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
     image-rendering: -webkit-optimize-contrast;
     filter: drop-shadow(0 0 24px rgba(255,90,95,0.15));
   }
-  #emotionSprite {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    background-image: url('emo_smile.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    opacity: 0;
-    transition: opacity 0.25s ease;
-    pointer-events: none;
-  }
 
   /* ---------- 대사창 ---------- */
   #dialogueBox {
-    margin: 0 10px 10px;
+    margin: 0 10px 8px;
     background: rgba(18,18,26,0.92);
     border: 2px solid #ff5a5f;
     border-radius: 8px;
-    padding: 12px 14px;
-    min-height: 78px;
+    padding: 10px 14px;
+    min-height: 70px;
     position: relative;
   }
   #speakerTag {
@@ -99,7 +87,7 @@
 
   /* ---------- 입력 영역 ---------- */
   #inputArea {
-    margin: 0 10px 14px;
+    margin: 0 10px 8px;
     min-height: 64px;
   }
   .hidden { display: none !important; }
@@ -120,18 +108,18 @@
 
   #numDisplay {
     background: #16161e; border: 2px solid #333; border-radius: 6px;
-    color: #eaeaea; font-size: 20px; letter-spacing: 4px;
-    padding: 10px 12px; text-align: center; min-height: 20px;
-    margin-bottom: 8px;
+    color: #eaeaea; font-size: 18px; letter-spacing: 4px;
+    padding: 7px 12px; text-align: center; min-height: 18px;
+    margin-bottom: 6px;
   }
   #numpad {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
+    gap: 5px;
   }
   .numBtn, #numClear, #numConfirm {
     background: #1c1c26; color: #eaeaea; border: 1px solid #333;
-    border-radius: 6px; font-size: 18px; padding: 12px 0;
+    border-radius: 6px; font-size: 17px; padding: 9px 0;
     font-family: inherit; cursor: pointer;
   }
   .numBtn:active, #numClear:active, #numConfirm:active { background: #ff5a5f; color: #0a0a0f; }
@@ -163,8 +151,7 @@
   </div>
 
   <div id="stage">
-    <div class="sprite" id="idleSprite"></div>
-    <div class="sprite" id="emotionSprite"></div>
+    <div class="sprite" id="charSprite"></div>
   </div>
 
   <div id="dialogueBox">
@@ -204,8 +191,7 @@
 (function () {
   'use strict';
 
-  var idleSprite = document.getElementById('idleSprite');
-  var emotionSprite = document.getElementById('emotionSprite');
+  var charSprite = document.getElementById('charSprite');
   var dialogueBox = document.getElementById('dialogueBox');
   var dialogueText = document.getElementById('dialogueText');
   var nameInputRow = document.getElementById('nameInputRow');
@@ -222,27 +208,34 @@
   var playerName = '';
   var numBuffer = '';
 
-  /* ---------- 캐릭터 idle 애니메이션 (정렬된 4프레임 순환) ---------- */
-  var idleFrames = ['idle_1.png', 'idle_2.png', 'idle_3.png', 'idle_4.png'];
-  var idleIndex = 0;
-  setInterval(function () {
-    idleIndex = (idleIndex + 1) % idleFrames.length;
-    idleSprite.style.backgroundImage = "url('" + idleFrames[idleIndex] + "')";
-  }, 350);
+  /* ---------- 캐릭터 프레임 교차 재생 (2장씩 번갈아) ---------- */
+  var DEFAULT_PAIR = ['smile.png', 'embarrassed.png'];
+  var pairTimer = null;
+  var pairIndex = 0;
+  var revertTimer = null;
 
-  /* ---------- 표정 피드백 ---------- */
-  var emotionFrames = { smile: 'emo_smile.png', crying: 'emo_crying.png', embarrassed: 'emo_embarrassed.png', angry: 'emo_angry.png' };
-  function showEmotion(type, ms) {
-    emotionSprite.style.backgroundImage = "url('" + (emotionFrames[type] || emotionFrames.smile) + "')";
-    emotionSprite.style.opacity = '1';
-    clearTimeout(showEmotion._t);
-    showEmotion._t = setTimeout(function () {
-      emotionSprite.style.opacity = '0';
-    }, ms || 1200);
+  function playPair(frames) {
+    clearInterval(pairTimer);
+    pairIndex = 0;
+    charSprite.style.backgroundImage = "url('" + frames[0] + "')";
+    pairTimer = setInterval(function () {
+      pairIndex = (pairIndex + 1) % frames.length;
+      charSprite.style.backgroundImage = "url('" + frames[pairIndex] + "')";
+    }, 350);
   }
 
+  function reactAndReturn(frames, ms) {
+    clearTimeout(revertTimer);
+    playPair(frames);
+    revertTimer = setTimeout(function () {
+      playPair(DEFAULT_PAIR);
+    }, ms || 1400);
+  }
+
+  playPair(DEFAULT_PAIR);
+
   /* 프레임 전환 시 깜빡임 없도록 미리 불러오기 */
-  idleFrames.concat(Object.values(emotionFrames)).forEach(function (f) {
+  ['base.png', 'smile.png', 'cry.png', 'embarrassed.png', 'angry.png'].forEach(function (f) {
     var img = new Image();
     img.src = f;
   });
@@ -270,8 +263,10 @@
   }
 
   /* ---------- 타이핑 대사 엔진 ---------- */
+  var skipHint = document.getElementById('skipHint');
   var typingTimer = null;
   var isTyping = false;
+  var awaitingContinue = false;
   var currentFullText = '';
   var currentOnComplete = null;
 
@@ -281,6 +276,8 @@
     currentFullText = text;
     currentOnComplete = onComplete;
     isTyping = true;
+    awaitingContinue = false;
+    skipHint.textContent = '탭하여 스킵';
     var i = 0;
     typingTimer = setInterval(function () {
       var ch = text[i];
@@ -291,14 +288,15 @@
         clearInterval(typingTimer);
         finishTyping();
       }
-    }, 40);
+    }, 57);
   }
 
   function finishTyping() {
     isTyping = false;
-    var cb = currentOnComplete;
-    currentOnComplete = null;
-    if (cb) cb();
+    if (currentOnComplete) {
+      awaitingContinue = true;
+      skipHint.textContent = '탭하여 계속';
+    }
   }
 
   dialogueBox.addEventListener('click', function () {
@@ -306,6 +304,12 @@
       clearInterval(typingTimer);
       dialogueText.textContent = currentFullText;
       finishTyping();
+    } else if (awaitingContinue) {
+      awaitingContinue = false;
+      skipHint.textContent = '';
+      var cb = currentOnComplete;
+      currentOnComplete = null;
+      if (cb) cb();
     }
   });
 
@@ -369,10 +373,10 @@
 
   function checkAnswer(value) {
     if (value === 36) {
-      showEmotion('smile', 1400);
+      reactAndReturn(['base.png', 'smile.png'], 1400);
       typeText('정답! 잘하는구나, ' + playerName + '.\n오늘 테스트는 여기까지다.', null);
     } else {
-      showEmotion('angry', 1400);
+      reactAndReturn(['base.png', 'angry.png'], 1400);
       typeText('오답이다. 다시 도전해봐!', showNumpad);
     }
   }
