@@ -293,6 +293,30 @@
     osc.start();
     osc.stop(audioCtx.currentTime + 0.05);
   }
+  function playSiren() {
+    if (!audioCtx) return;
+    var duration = 1.4;
+    var sweeps = 3;
+    var sweepTime = duration / sweeps;
+    var now = audioCtx.currentTime;
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.exponentialRampToValueAtTime(0.12, now + 0.05);
+    gain.gain.setValueAtTime(0.12, now + duration - 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    for (var i = 0; i < sweeps; i++) {
+      var t0 = now + i * sweepTime;
+      osc.frequency.setValueAtTime(600, t0);
+      osc.frequency.linearRampToValueAtTime(1200, t0 + sweepTime / 2);
+      osc.frequency.linearRampToValueAtTime(600, t0 + sweepTime);
+    }
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + duration);
+  }
+  var SOUND_EFFECTS = { '사이렌': playSiren };
 
   /* ---------- 타이핑 대사 엔진 ---------- */
   var skipHint = document.getElementById('skipHint');
@@ -349,6 +373,7 @@
      블록 형식 (빈 줄로 구분):
        [대사]
        하고 싶은 말      (말하는 사람은 항상 반반이로 고정)
+       효과음: 사이렌      (선택, 이 대사가 나올 때 효과음도 같이 재생. 현재 지원: 사이렌)
 
        [숫자문제]
        문제: 4 x 9는 얼마일까?
@@ -379,8 +404,18 @@
       var type = header[1].trim();
       var bodyLines = lines.slice(1);
       if (type === '대사') {
-        if (bodyLines.length === 0) return;
-        steps.push({ type: 'dialogue', text: bodyLines.join('\n') });
+        var sound = null;
+        var textLines = [];
+        bodyLines.forEach(function (line) {
+          var idx = line.indexOf(':');
+          if (idx !== -1 && line.slice(0, idx).trim() === '효과음') {
+            sound = line.slice(idx + 1).trim();
+          } else {
+            textLines.push(line);
+          }
+        });
+        if (textLines.length === 0) return;
+        steps.push({ type: 'dialogue', text: textLines.join('\n'), sound: sound });
         return;
       }
       var fields = {};
@@ -452,6 +487,7 @@
     var text = withName(step.text);
     playPair(DEFAULT_PAIR);
     if (step.type === 'dialogue') {
+      if (step.sound && SOUND_EFFECTS[step.sound]) SOUND_EFFECTS[step.sound]();
       var isLast = (i === quizSteps.length - 1);
       typeText(text, isLast ? null : function () { playStep(i + 1); });
     } else if (step.type === 'number') {
