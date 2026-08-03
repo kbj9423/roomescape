@@ -19,7 +19,6 @@
     height: 100dvh;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
     position: relative;
     background: #0a0a0f;
     border-left: 1px solid #222;
@@ -46,13 +45,14 @@
     flex: 1;
     display: flex; align-items: center; justify-content: center;
     position: relative; min-height: 0;
-    max-height: 100%;
     overflow: hidden;
     padding: 10px;
-    transition: max-height 0.35s ease, opacity 0.3s ease;
   }
+  /* 이름 입력창/숫자패드가 함께 떠 있어도 화면 밖으로 밀리지 않도록,
+     캐릭터를 처음부터 안전하게 작은 고정 크기로 둠(상태 전환에 따른
+     크기 변화·움직임 없음) */
   .sprite {
-    height: min(38vh, 300px);
+    height: min(24vh, 190px);
     width: auto;
     aspect-ratio: 384 / 702;
     background-image: url('smile.png');
@@ -61,15 +61,6 @@
     background-position: center;
     image-rendering: -webkit-optimize-contrast;
     filter: drop-shadow(0 0 24px rgba(255,90,95,0.15));
-    transition: transform 0.35s ease;
-  }
-  /* 입력창(이름/숫자패드)이 뜨면 캐릭터가 위로 날아가며 사라지고, 문제·답·키패드만 남김 */
-  #app.inputActive #stage {
-    max-height: 0;
-    opacity: 0;
-  }
-  #app.inputActive .sprite {
-    transform: translateY(-60px);
   }
 
   /* ---------- 대사창 ---------- */
@@ -101,14 +92,6 @@
   #inputArea {
     margin: 0 10px 8px;
     min-height: 64px;
-  }
-  /* 캐릭터가 사라져 비는 공간을, 입력 영역이 커지면서 그대로 채우도록 함 */
-  #app.inputActive #inputArea {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
   }
   .hidden { display: none !important; }
 
@@ -211,7 +194,6 @@
 (function () {
   'use strict';
 
-  var appEl = document.getElementById('app');
   var charSprite = document.getElementById('charSprite');
   var dialogueBox = document.getElementById('dialogueBox');
   var dialogueText = document.getElementById('dialogueText');
@@ -348,7 +330,6 @@
 
   function showNameInput() {
     nameInputRow.classList.remove('hidden');
-    appEl.classList.add('inputActive');
     nameInput.value = '';
     nameInput.focus();
   }
@@ -358,7 +339,6 @@
     if (!v) return;
     playerName = v;
     nameInputRow.classList.add('hidden');
-    appEl.classList.remove('inputActive');
     step2_confirmAndQuiz();
   }
   nameConfirm.addEventListener('click', submitName);
@@ -377,7 +357,6 @@
     numBuffer = '';
     numDisplay.textContent = '';
     numpadArea.classList.remove('hidden');
-    appEl.classList.add('inputActive');
   }
 
   numpad.addEventListener('click', function (e) {
@@ -396,7 +375,6 @@
   numConfirm.addEventListener('click', function () {
     if (!numBuffer) return;
     numpadArea.classList.add('hidden');
-    appEl.classList.remove('inputActive');
     checkAnswer(parseInt(numBuffer, 10));
   });
 
