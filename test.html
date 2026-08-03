@@ -19,6 +19,7 @@
     height: 100vh;
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
     position: relative;
     background: #0a0a0f;
     border-left: 1px solid #222;
@@ -45,11 +46,13 @@
     flex: 1;
     display: flex; align-items: center; justify-content: center;
     position: relative; min-height: 0;
+    max-height: 100%;
     overflow: hidden;
     padding: 10px;
+    transition: max-height 0.35s ease, opacity 0.3s ease;
   }
   .sprite {
-    height: min(32vh, 260px);
+    height: min(38vh, 300px);
     width: auto;
     aspect-ratio: 384 / 702;
     background-image: url('smile.png');
@@ -58,11 +61,15 @@
     background-position: center;
     image-rendering: -webkit-optimize-contrast;
     filter: drop-shadow(0 0 24px rgba(255,90,95,0.15));
-    transition: height 0.2s ease;
+    transition: transform 0.35s ease;
   }
-  /* 입력창(이름/숫자패드)이 떠 있을 때는 캐릭터를 더 작게 줄여서 확인 버튼이 화면 밖으로 밀리지 않게 함 */
+  /* 입력창(이름/숫자패드)이 뜨면 캐릭터가 위로 날아가며 사라지고, 문제·답·키패드만 남김 */
+  #app.inputActive #stage {
+    max-height: 0;
+    opacity: 0;
+  }
   #app.inputActive .sprite {
-    height: min(18vh, 150px);
+    transform: translateY(-60px);
   }
 
   /* ---------- 대사창 ---------- */
