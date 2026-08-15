@@ -19,11 +19,17 @@
     height: 100dvh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     position: relative;
     background: #0a0a0f;
     border-left: 1px solid #222;
     border-right: 1px solid #222;
+  }
+  /* 공간이 넉넉하면 이 여백이 늘어나서 가운데 정렬처럼 보이고,
+     키보드 등으로 공간이 부족해지면 대사창/입력판보다 먼저 줄어듦 */
+  #app::before, #app::after {
+    content: '';
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   /* ---------- 상단 컨트롤 버튼(전체화면/이전 단계) ---------- */
@@ -82,7 +88,8 @@
 
   /* ---------- 캐릭터 스테이지 ---------- */
   #stage {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    min-height: 0;
     display: flex; align-items: center; justify-content: center;
     position: relative;
     overflow: hidden;
@@ -154,7 +161,9 @@
   #numDisplay {
     background: #16161e; border: 2px solid #333; border-radius: 6px;
     color: #eaeaea; font-size: 18px; letter-spacing: 4px;
-    padding: 7px 12px; text-align: center; min-height: 18px;
+    padding: 0 12px; text-align: center;
+    height: 36px; line-height: 32px;
+    overflow: hidden; white-space: nowrap;
     margin-bottom: 6px;
   }
   #numpad {
