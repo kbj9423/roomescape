@@ -71,6 +71,13 @@
     55% { background: #0a0a0f; opacity: 1; }
     100% { background: #0a0a0f; opacity: 0; }
   }
+  #startScreen.ending {
+    animation: outroFade 1.6s ease forwards;
+  }
+  @keyframes outroFade {
+    0% { background: #0a0a0f; opacity: 0; }
+    100% { background: #ffffff; opacity: 1; }
+  }
 
   /* ---------- 캐릭터 스테이지 ---------- */
   #stage {
@@ -85,7 +92,7 @@
      #inputArea의 최소 높이(숫자패드 기준)로 고정해두었음 */
   .sprite {
     height: 100%;
-    max-height: 620px;
+    max-height: 560px;
     width: auto;
     aspect-ratio: 384 / 702;
     background-image: url('emoticon/smile.png');
@@ -104,6 +111,7 @@
     border-radius: 8px;
     padding: 10px 14px;
     min-height: 70px;
+    flex-shrink: 0;
     position: relative;
   }
   #speakerTag {
@@ -127,6 +135,7 @@
   #inputArea {
     margin: 0 10px 8px;
     min-height: 210px;
+    flex-shrink: 0;
   }
   .hidden { display: none !important; }
 
@@ -268,6 +277,7 @@
   var subjectiveInputRow = document.getElementById('subjectiveInputRow');
   var subjectiveInput = document.getElementById('subjectiveInput');
   var subjectiveConfirm = document.getElementById('subjectiveConfirm');
+  var startScreen = document.getElementById('startScreen');
   var backBtn = document.getElementById('backBtn');
   var fullscreenBtn = document.getElementById('fullscreenBtn');
   var imageViewBtn = document.getElementById('imageViewBtn');
@@ -556,6 +566,7 @@
     var v = nameInput.value.trim();
     if (!v) return;
     playerName = v;
+    saveGlobalName(v);
     nameInputRow.classList.add('hidden');
     if (quizSteps.length === 0) {
       typeText('불러올 문제가 없다. ' + quizFile + '를 확인해봐라.', null);
@@ -595,6 +606,10 @@
   }
   backBtn.addEventListener('click', goBack);
 
+  function playEnding() {
+    startScreen.classList.add('ending');
+  }
+
   function playStep(i) {
     currentStepIndex = i;
     var step = quizSteps[i];
@@ -603,11 +618,12 @@
     updateImageButton(step.image);
     playPair(DEFAULT_PAIR);
     saveProgress(i);
+    startScreen.classList.remove('ending');
     if (step.type === 'dialogue') {
       if (step.sound && SOUND_EFFECTS[step.sound]) SOUND_EFFECTS[step.sound]();
       var isLast = (i === quizSteps.length - 1);
       if (isLast) clearProgress();
-      typeText(text, isLast ? null : function () { goToStep(i + 1); });
+      typeText(text, isLast ? playEnding : function () { goToStep(i + 1); });
     } else if (step.type === 'number') {
       typeText(text, function () { showNumpadFor(step); });
     } else if (step.type === 'choice') {
@@ -709,6 +725,7 @@
   /* ---------- 중간에 창을 닫아도 이어할 수 있도록 진행 상황 저장 ---------- */
   var quizFile = new URLSearchParams(location.search).get('quiz') || 'quiz_phase1.txt';
   var PROGRESS_KEY = 'roomescape_progress_' + quizFile;
+  var GLOBAL_NAME_KEY = 'roomescape_playerName';
   function saveProgress(i) {
     try {
       localStorage.setItem(PROGRESS_KEY, JSON.stringify({ playerName: playerName, stepIndex: i }));
@@ -722,6 +739,25 @@
   }
   function clearProgress() {
     try { localStorage.removeItem(PROGRESS_KEY); } catch (e) {}
+  }
+  function saveGlobalName(name) {
+    try { localStorage.setItem(GLOBAL_NAME_KEY, name); } catch (e) {}
+  }
+  function loadGlobalName() {
+    try { return localStorage.getItem(GLOBAL_NAME_KEY) || ''; } catch (e) { return ''; }
+  }
+
+  /* ---------- 새 페이즈를 열면 이전 페이즈의 남은 진행 기록은 정리 ---------- */
+  var PHASE_RESET_MAP = {
+    'quiz_phase1.txt': ['quiz_phase2.txt', 'quiz_phase3.txt'],
+    'quiz_phase2.txt': ['quiz_phase1.txt'],
+    'quiz_phase3.txt': ['quiz_phase2.txt']
+  };
+  (PHASE_RESET_MAP[quizFile] || []).forEach(function (f) {
+    try { localStorage.removeItem('roomescape_progress_' + f); } catch (e) {}
+  });
+  if (quizFile === 'quiz_phase1.txt') {
+    try { localStorage.removeItem(GLOBAL_NAME_KEY); } catch (e) {}
   }
 
   /* ---------- 시작 버튼 없이 바로 진행, 첫 탭에서 소리 활성화 ---------- */
@@ -739,6 +775,12 @@
       if (saved && saved.stepIndex >= 0 && saved.stepIndex < quizSteps.length) {
         playerName = saved.playerName || '';
         goToStep(saved.stepIndex);
+        return;
+      }
+      var existingName = loadGlobalName();
+      if (existingName && quizSteps.length > 0) {
+        playerName = existingName;
+        goToStep(0);
       } else {
         step1_greeting();
       }
