@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, interactive-widget=resizes-content">
 <title>반반이 퀴즈 테스트</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
@@ -87,9 +87,11 @@
     overflow: hidden;
     padding: 10px;
   }
-  /* 캐릭터 크기를 화면 상태(전체화면 여부 등)에 상관없이 항상 동일하게 고정 */
+  /* 캐릭터는 반응형이되, 상한선을 작게 잡아서 키보드가 뜨고 닫힐 때
+     크기가 눈에 띄게 출렁이지 않도록 함 */
   .sprite {
-    height: min(150px, 100%);
+    height: 100%;
+    max-height: 150px;
     width: auto;
     aspect-ratio: 384 / 702;
     background-image: url('emoticon/smile.png');
@@ -202,7 +204,6 @@
 
   <div id="topBar">
     <button id="backBtn" class="ctrlBtn hidden" aria-label="이전 단계">◀</button>
-    <button id="fullscreenBtn" class="ctrlBtn" aria-label="전체화면">⛶</button>
   </div>
 
   <div id="startScreen"></div>
@@ -276,7 +277,6 @@
   var subjectiveConfirm = document.getElementById('subjectiveConfirm');
   var startScreen = document.getElementById('startScreen');
   var backBtn = document.getElementById('backBtn');
-  var fullscreenBtn = document.getElementById('fullscreenBtn');
   var imageViewBtn = document.getElementById('imageViewBtn');
   var imageOverlay = document.getElementById('imageOverlay');
   var imageOverlayImg = document.getElementById('imageOverlayImg');
@@ -367,26 +367,6 @@
     osc.stop(now + duration);
   }
   var SOUND_EFFECTS = { '사이렌': playSiren };
-
-  /* ---------- 전체화면 버튼 ---------- */
-  function toggleFullscreen() {
-    var inFs = document.fullscreenElement || document.webkitFullscreenElement;
-    if (!inFs) {
-      var el = document.documentElement;
-      if (el.requestFullscreen) el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    } else {
-      if (document.exitFullscreen) document.exitFullscreen();
-      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-    }
-  }
-  function updateFullscreenIcon() {
-    var inFs = document.fullscreenElement || document.webkitFullscreenElement;
-    fullscreenBtn.textContent = inFs ? '⤢' : '⛶';
-  }
-  fullscreenBtn.addEventListener('click', toggleFullscreen);
-  document.addEventListener('fullscreenchange', updateFullscreenIcon);
-  document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
 
   /* ---------- 문제에 딸린 이미지(링크) 보기 ---------- */
   function updateImageButton(url) {
