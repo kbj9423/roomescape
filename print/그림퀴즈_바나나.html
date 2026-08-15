@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>그림퀴즈</title>
+<style>
+  @page { size: A4 portrait; margin: 18mm; }
+  body {
+    font-family: "Malgun Gothic", sans-serif;
+    text-align: center;
+    color: #222;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    font-size: 40px;
+    font-weight: bold;
+    margin: 40px 0;
+  }
+  .fruit { font-size: 70px; }
+  .op { color: #888; }
+  .box {
+    display: inline-block;
+    min-width: 60px;
+    border-bottom: 3px solid #333;
+    margin: 0 6px;
+  }
+  .qmark { color: #e0691a; }
+  .label { font-size: 26px; color: #555; margin-top: -20px; margin-bottom: 30px; }
+  .pw-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    font-size: 32px;
+    font-weight: bold;
+    margin-top: 60px;
+    border-top: 3px dashed #aaa;
+    padding-top: 30px;
+  }
+  .pw-boxes {
+    display: flex;
+    gap: 8px;
+  }
+  .pw-box {
+    width: 46px;
+    height: 56px;
+    border: 3px solid #333;
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="row">
+    <span class="fruit">🍎</span><span class="op">=</span><span>9</span>
+  </div>
+
+  <div class="row">
+    <span class="fruit">🍇</span><span class="op">=</span><span class="fruit">🍎</span><span class="op">+</span><span>9</span>
+  </div>
+  <div class="label">포도는 얼마일까?</div>
+
+  <div class="row">
+    <span class="fruit">🍌</span><span class="op qmark">=</span><span class="fruit">🍎</span><span class="op">+</span><span class="fruit">🍇</span>
+  </div>
+  <div class="label">바나나는 얼마일까?</div>
+
+  <div class="pw-row">
+    <span>비밀번호 =</span>
+    <span class="fruit" style="font-size:44px;">🍌</span>
+    <span class="pw-boxes"><span class="pw-box"></span><span class="pw-box"></span></span>
+    <span class="fruit" style="font-size:44px;">🍇</span>
+    <span class="pw-boxes"><span class="pw-box"></span><span class="pw-box"></span></span>
+  </div>
+
+</body>
+</html>
