@@ -90,7 +90,7 @@
     max-height: 620px;
     width: auto;
     aspect-ratio: 384 / 702;
-    background-image: url('smile.png');
+    background-image: url('emoticon/smile.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -295,12 +295,12 @@
      당황: idle3 ↔ embarrassed / 화남: idle4 ↔ angry
      정답/오답 반응은 다음 문제·대사로 넘어가기 전까지 계속 반복됨
   ---------------------------------------------------------- */
-  var DEFAULT_PAIR = ['idle1.png', 'idle3.png'];
+  var DEFAULT_PAIR = ['emoticon/idle1.png', 'emoticon/idle3.png'];
   var EMOTION_PAIRS = {
-    '웃음': ['idle1.png', 'smile.png'],
-    '눈물': ['idle2.png', 'cry.png'],
-    '당황': ['idle3.png', 'embarrassed.png'],
-    '화남': ['idle4.png', 'angry.png']
+    '웃음': ['emoticon/idle1.png', 'emoticon/smile.png'],
+    '눈물': ['emoticon/idle2.png', 'emoticon/cry.png'],
+    '당황': ['emoticon/idle3.png', 'emoticon/embarrassed.png'],
+    '화남': ['emoticon/idle4.png', 'emoticon/angry.png']
   };
   var pairTimer = null;
   var pairIndex = 0;
@@ -318,7 +318,7 @@
   playPair(DEFAULT_PAIR);
 
   /* 프레임 전환 시 깜빡임 없도록 미리 불러오기 */
-  ['idle1.png', 'idle2.png', 'idle3.png', 'idle4.png', 'smile.png', 'cry.png', 'embarrassed.png', 'angry.png'].forEach(function (f) {
+  ['emoticon/idle1.png', 'emoticon/idle2.png', 'emoticon/idle3.png', 'emoticon/idle4.png', 'emoticon/smile.png', 'emoticon/cry.png', 'emoticon/embarrassed.png', 'emoticon/angry.png'].forEach(function (f) {
     var img = new Image();
     img.src = f;
   });
