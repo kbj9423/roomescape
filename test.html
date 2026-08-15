@@ -82,7 +82,7 @@
   /* ---------- 캐릭터 스테이지 ---------- */
   #stage {
     flex: 1;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: flex-end; justify-content: center;
     position: relative; min-height: 0;
     overflow: hidden;
     padding: 10px;
@@ -187,9 +187,7 @@
     display: none; align-items: center; justify-content: center;
     text-align: center; font-size: 16px; padding: 20px;
   }
-  @media (orientation: landscape) {
-    #rotateNotice { display: flex; }
-  }
+  #rotateNotice.show { display: flex; }
 </style>
 </head>
 <body>
@@ -280,6 +278,24 @@
   var imageViewBtn = document.getElementById('imageViewBtn');
   var imageOverlay = document.getElementById('imageOverlay');
   var imageOverlayImg = document.getElementById('imageOverlayImg');
+  var rotateNotice = document.getElementById('rotateNotice');
+
+  /* ---------- 가로모드 안내(키보드로 화면이 줄어들 때 오작동하지 않도록
+     화면 크기가 아니라 실제 기기 회전 상태를 기준으로 판단) ---------- */
+  function updateRotateNotice() {
+    var isLandscape;
+    if (screen.orientation && screen.orientation.type) {
+      isLandscape = screen.orientation.type.indexOf('landscape') === 0;
+    } else if (typeof window.orientation !== 'undefined') {
+      isLandscape = Math.abs(window.orientation) === 90;
+    } else {
+      isLandscape = window.innerWidth > window.innerHeight;
+    }
+    rotateNotice.classList.toggle('show', isLandscape);
+  }
+  window.addEventListener('orientationchange', updateRotateNotice);
+  if (screen.orientation) screen.orientation.addEventListener('change', updateRotateNotice);
+  updateRotateNotice();
 
   var playerName = '';
   var numBuffer = '';
