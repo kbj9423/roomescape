@@ -87,12 +87,10 @@
     overflow: hidden;
     padding: 10px;
   }
-  /* 캐릭터는 스테이지(#stage)가 실제로 남겨주는 공간을 그대로 채움.
-     문제 유형이 바뀌어도 크기가 흔들리지 않도록, 스테이지 크기 자체를
-     #inputArea의 최소 높이(숫자패드 기준)로 고정해두었음 */
+  /* 캐릭터 크기를 화면 상태(전체화면 여부 등)에 상관없이 항상 동일하게 고정
+     (실측 약 5cm ≈ 189px 기준) */
   .sprite {
-    height: 100%;
-    max-height: 560px;
+    height: min(189px, 100%);
     width: auto;
     aspect-ratio: 384 / 702;
     background-image: url('emoticon/smile.png');
