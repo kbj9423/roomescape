@@ -28,9 +28,10 @@
   /* ---------- 상단 컨트롤 버튼(전체화면/이전 단계) ---------- */
   #topBar {
     position: absolute; top: 0; left: 0; right: 0; z-index: 70;
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: flex-end; align-items: center;
     padding: 8px; pointer-events: none;
   }
+  #backBtn { margin-right: auto; }
   .ctrlBtn {
     pointer-events: auto;
     background: rgba(20,20,28,0.7); color: #eaeaea; border: 1px solid #444;
