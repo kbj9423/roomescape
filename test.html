@@ -282,6 +282,7 @@
   var quizSteps = [];
   var currentStepIndex = -1;
   var stepHistory = [];
+  var inputLockUntil = 0;
   var currentStepImage = null;
 
   /* ---------- 캐릭터 프레임 교차 재생 (2장씩 번갈아) ----------
@@ -341,8 +342,8 @@
   }
   function playSiren() {
     if (!audioCtx) return;
-    var duration = 1.4;
-    var sweeps = 3;
+    var duration = 15;
+    var sweeps = 15;
     var sweepTime = duration / sweeps;
     var now = audioCtx.currentTime;
     var osc = audioCtx.createOscillator();
@@ -395,7 +396,7 @@
     currentOnComplete = onComplete;
     isTyping = true;
     awaitingContinue = false;
-    skipHint.textContent = '탭하여 스킵';
+    skipHint.textContent = (Date.now() < inputLockUntil) ? '' : '탭하여 스킵';
     var i = 0;
     typingTimer = setInterval(function () {
       var ch = text[i];
@@ -413,11 +414,12 @@
     isTyping = false;
     if (currentOnComplete) {
       awaitingContinue = true;
-      skipHint.textContent = '탭하여 계속';
+      skipHint.textContent = (Date.now() < inputLockUntil) ? '' : '탭하여 계속';
     }
   }
 
   dialogueBox.addEventListener('click', function () {
+    if (Date.now() < inputLockUntil) return;
     if (isTyping) {
       clearInterval(typingTimer);
       dialogueText.textContent = currentFullText;
@@ -437,6 +439,7 @@
        하고 싶은 말      (말하는 사람은 항상 반반이로 고정)
        효과음: 사이렌      (선택, 이 대사가 나올 때 효과음도 같이 재생. 현재 지원: 사이렌)
        링크: https://...      (선택, 이 대사에 그림을 붙이고 싶을 때 이미지 주소를 적으면 화면에 "🖼 그림" 버튼이 뜸)
+       잠금: 15000      (선택, 숫자는 ms 단위. 이 대사가 나온 순간부터 지정한 시간 동안 화면을 아무리 눌러도 스킵/다음으로 안 넘어감. 시간이 지나면 자동으로 다시 눌러서 넘길 수 있음)
 
        [숫자문제]
        문제: 4 x 9는 얼마일까?
@@ -471,6 +474,7 @@
       if (type === '대사') {
         var sound = null;
         var image = null;
+        var lock = null;
         var textLines = [];
         bodyLines.forEach(function (line) {
           var idx = line.indexOf(':');
@@ -479,12 +483,14 @@
             sound = line.slice(idx + 1).trim();
           } else if (key === '링크') {
             image = line.slice(idx + 1).trim();
+          } else if (key === '잠금') {
+            lock = parseInt(line.slice(idx + 1).trim(), 10) || null;
           } else {
             textLines.push(line);
           }
         });
         if (textLines.length === 0) return;
-        steps.push({ type: 'dialogue', text: textLines.join('\n'), sound: sound, image: image });
+        steps.push({ type: 'dialogue', text: textLines.join('\n'), sound: sound, image: image, lock: lock });
         return;
       }
       var fields = {};
@@ -594,6 +600,12 @@
     startScreen.classList.remove('ending');
     if (step.type === 'dialogue') {
       if (step.sound && SOUND_EFFECTS[step.sound]) SOUND_EFFECTS[step.sound]();
+      if (step.lock) {
+        inputLockUntil = Date.now() + step.lock;
+        setTimeout(function () {
+          if (!isTyping && awaitingContinue) skipHint.textContent = '탭하여 계속';
+        }, step.lock);
+      }
       var isLast = (i === quizSteps.length - 1);
       if (isLast) clearProgress();
       typeText(text, isLast ? playEnding : function () { goToStep(i + 1); });
